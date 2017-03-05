@@ -1,0 +1,122 @@
+version: "2"
+
+services:
+  mariadb:
+    image: wodby/drupal-mariadb:1.0.0
+    environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: 1
+      MYSQL_DATABASE: drupal
+      MYSQL_USER: drupal
+      MYSQL_PASSWORD: drupal
+#    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci # The simple way to override the mariadb config.
+#    volumes:
+#      - ./mariadb-init:/docker-entrypoint-initdb.d # Place init .sql file(s) here.
+
+  php:
+    image: wodby/drupal-php:7.0-1.0.0
+#    image: wodby/drupal-php:5.6-1.0.0
+    environment:
+      PHP_SITE_NAME: dev
+      PHP_HOST_NAME: localhost:8000
+      PHP_DOCROOT: web # Relative path inside the /var/www/html/ directory.
+      PRESSFLOW_SETTINGS: '{"databases":{"default":{"default":{"database":"drupal","username":"drupal","password":"drupal","host":"mariadb","port":"3306","driver":"mysql","prefix":"","collation":"utf8mb4_general_ci"}}}}'
+      PANTHEON_ENVIRONMENT: local
+      DRUPAL_HASH_SALT: mmm...salty
+      PHP_SENDMAIL_PATH: /usr/sbin/sendmail -t -i -S mailhog:1025
+      # PHP_XDEBUG_ENABLED: 1
+      # PHP_XDEBUG_AUTOSTART: 1
+      # PHP_XDEBUG_REMOTE_CONNECT_BACK: 0         # This is needed to respect remote.host setting bellow
+      # PHP_XDEBUG_REMOTE_HOST: "10.254.254.254"  # You will also need to 'sudo ifconfig lo0 alias 10.254.254.254'
+    volumes:
+      - ./:/var/www/html
+#      - d4d-unison-sync:/var/www/html:rw # Replace volume to this to use docker-sync for macOS users
+
+  nginx:
+    image: wodby/drupal-nginx:1.10-1.1.0
+    environment:
+      NGINX_SERVER_NAME: localhost
+      NGINX_UPSTREAM_NAME: php
+      NGINX_DOCROOT: web # Relative path inside the /var/www/html/ directory.
+      DRUPAL_VERSION: 8 # Allowed: 7, 8.
+    volumes_from:
+      - php
+    ports:
+      - "8000:80"
+
+  pma:
+    image: phpmyadmin/phpmyadmin
+    environment:
+      PMA_HOST: mariadb
+      PMA_USER: drupal
+      PMA_PASSWORD: drupal
+      PHP_UPLOAD_MAX_FILESIZE: 1G
+      PHP_MAX_INPUT_VARS: 1G
+    ports:
+     - "8001:80"
+
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "8002:8025"
+
+  testdb:
+    image: wodby/drupal-mariadb:1.0.0
+    environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: 1
+      MYSQL_DATABASE: drupal
+      MYSQL_USER: drupal
+      MYSQL_PASSWORD: drupal
+#    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci # The simple way to override the mariadb config.
+    volumes:
+      - ./mariadb-init:/docker-entrypoint-initdb.d # Place init .sql file(s) here.
+  testphp:
+    image: wodby/drupal-php:7.0-1.0.0
+    environment:
+      PHP_SITE_NAME: test
+      PHP_HOST_NAME: localhost:8100
+      PHP_DOCROOT: web
+      PRESSFLOW_SETTINGS: '{"databases":{"default":{"default":{"database":"drupal","username":"drupal","password":"drupal","host":"testdb","port":"3306","driver":"mysql","prefix":"","collation":"utf8mb4_general_ci"}}}}'
+      PANTHEON_ENVIRONMENT: local
+      DRUPAL_HASH_SALT: mmm...salty
+      TEST_ZOTERO_USER_ID: ${TEST_ZOTERO_USER_ID}
+      TEST_ZOTERO_API_KEY: ${TEST_ZOTERO_API_KEY}
+    volumes:
+      - ./:/var/www/html
+#      - d4d-unison-sync:/var/www/html:rw # Replace volume to this to use docker-sync for macOS users
+  testnginx:
+    image: wodby/drupal-nginx:1.10-1.1.0
+    environment:
+      NGINX_SERVER_NAME: localhost
+      NGINX_UPSTREAM_NAME: testphp
+      NGINX_DOCROOT: web
+      DRUPAL_VERSION: 8 # Allowed: 7, 8.
+    volumes_from:
+      - testphp
+    ports:
+      - "8100:80"
+
+#  solr:
+#    image: wodby/solr:5.5-1.0.0
+##    image: wodby/solr:6.3-1.0.0
+#    environment:
+#      SOLR_HEAP: 1024m
+#    ports:
+#      - "8003:8983"
+
+#  varnish:
+#    image: wodby/drupal-varnish:1.0.0
+#    depends_on:
+#      - nginx
+#    environment:
+#      VARNISH_SECRET: secret
+#      VARNISH_BACKEND_HOST: nginx
+#      VARNISH_BACKEND_PORT: 80
+#      VARNISH_MEMORY_SIZE: 256M
+#      VARNISH_STORAGE_SIZE: 1024M
+#    ports:
+#      - "8004:6081" # HTTP Proxy
+#      - "8005:6082" # Control terminal
+
+#volumes:
+#  ss-unison-sync:
+#    external: true
