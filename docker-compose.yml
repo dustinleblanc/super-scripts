@@ -2,9 +2,113 @@ version: "2"
 
 services:
   mariadb:
-    image: mariadb
+    image: wodby/mariadb:10.1-2.0.0
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: drupal
+      MYSQL_USER: drupal
+      MYSQL_PASSWORD: drupal
+    volumes:
+      - ./mariadb-init:/docker-entrypoint-initdb.d # Place init .sql file(s) here.
 
-  appserver:
-    image: kalabox/pantheon-appserver:70
+  php:
+    image: wodby/drupal-php:7.0-2.0.0
+    environment:
+      PHP_SENDMAIL_PATH: /usr/sbin/sendmail -t -i -S mailhog:1025
+      PRESSFLOW_SETTINGS: '{"databases":{"default":{"default":{"database":"drupal","username":"drupal","password":"drupal","host":"mariadb","port":"3306","driver":"mysql","prefix":"","collation":"utf8mb4_general_ci"}}}}'
+      PANTHEON_ENVIRONMENT: local
+      # PHP_XDEBUG: 1
+      # PHP_XDEBUG_DEFAULT_ENABLE: 1
+      # PHP_XDEBUG_REMOTE_CONNECT_BACK: 0         # This is needed to respect remote.host setting bellow
+      # PHP_XDEBUG_REMOTE_HOST: "10.254.254.254"  # You will also need to 'sudo ifconfig lo0 alias 10.254.254.254'
+    volumes:
+      - ./:/var/www/html
+#      - d4d-unison-sync:/var/www/html:rw # Replace volume to this to use docker-sync for macOS users
+
+  nginx:
+    image: wodby/drupal-nginx:8-1.10-2.0.0
+    restart: unless-stopped
+    depends_on:
+      - php
+    environment:
+      NGINX_BACKEND_HOST: php
+      NGINX_SERVER_ROOT: /var/www/html/web
+      DRUPAL_HASH_SALT: mmm...salty
+    ports:
+      - "8000:80"
+    volumes:
+      - ./:/var/www/html
+
+  testdb:
+    image: wodby/mariadb:10.1-2.0.0
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: drupal
+      MYSQL_USER: drupal
+      MYSQL_PASSWORD: drupal
+    volumes:
+      - ./mariadb-init:/docker-entrypoint-initdb.d # Place init .sql file(s) here.
+
+  testphp:
+    image: wodby/drupal-php:7.0-2.0.0
+    environment:
+      PHP_SENDMAIL_PATH: /usr/sbin/sendmail -t -i -S mailhog:1025
+      PRESSFLOW_SETTINGS: '{"databases":{"default":{"default":{"database":"drupal","username":"drupal","password":"drupal","host":"testdb","port":"3306","driver":"mysql","prefix":"","collation":"utf8mb4_general_ci"}}}}'
+      PANTHEON_ENVIRONMENT: local
+      TEST_ZOTERO_USER_ID: ${TEST_ZOTERO_USER_ID}
+      TEST_ZOTERO_API_KEY: ${TEST_ZOTERO_API_KEY}
+      BEHAT_PARAMS: '{"extensions" : {"Behat\\MinkExtension" : {"base_url" : "http://testnginx/", "selenium2": { "wd_host": "http://phantomjs:4444/wd/hub"}}, "Drupal\\DrupalExtension" : {"drush" : {"root" : "./web"}}}}'
+    volumes:
+      - ./:/var/www/html
+#      - d4d-unison-sync:/var/www/html:rw # Replace volume to this to use docker-sync for macOS users
+
+  testnginx:
+    image: wodby/drupal-nginx:8-1.10-2.0.0
+    restart: unless-stopped
+    depends_on:
+      - testphp
+    environment:
+      NGINX_BACKEND_HOST: testphp
+      NGINX_SERVER_ROOT: /var/www/html/web
+      DRUPAL_HASH_SALT: mmm...salty
+    ports:
+      - "8100:80"
+    volumes:
+      - ./:/var/www/html
+
+  pma:
+    image: phpmyadmin/phpmyadmin
+    environment:
+      PMA_HOST: mariadb
+      PMA_USER: drupal
+      PMA_PASSWORD: drupal
+      PHP_UPLOAD_MAX_FILESIZE: 1G
+      PHP_MAX_INPUT_VARS: 1G
+
+  mailhog:
+    image: mailhog/mailhog
+
+
+
+  phantomjs:
+    image: jribar/node-phantomjs
+    volumes_from:
+      - testphp
+    links:
+      - testnginx
+    ports:
+      - 4444
+    entrypoint: phantomjs
+    command: "--webdriver=4444"
 
   build:
+    image: fusengine/docker-bower-gulp-browserify
+    environment:
+      BOWER_CWD: './web/profiles/recover/themes/recover_theme'
+    volumes:
+      - ./:/data
+# Docker-sync for macOS users
+#volumes:
+#  d4d-unison-sync:
+#    external: true
+
