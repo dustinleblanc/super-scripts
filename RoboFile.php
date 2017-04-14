@@ -8,40 +8,14 @@
 class RoboFile extends \Robo\Tasks
 {
     use \Boedah\Robo\Task\Drush\loadTasks;
+    const COMPOSE_BIN = 'docker-compose';
     const DRUPAL_ROOT = __DIR__ . '/web';
     const DRUSH_BIN = __DIR__ . '/vendor/bin/drush';
-    const BEHAT_BIN = __DIR__ . '/vendor/bin/behat';
+    const DUMP_FILE = __DIR__ . '/dump.sql.gz';
+    const BEHAT_BIN = './vendor/bin/behat';
+    const SITENAME = 'super-scripts';
     const TERMINUS_BIN = 'terminus';
 
-    public function theme()
-    {
-        // run watcher on theme assets
-
-    }
-
-    public function buildDev()
-    {
-        // Compile SASS/JS
-
-    }
-
-    /**
-     * Build assets for Production Release.
-     *
-     * Install front-end dependencies and production PHP dependencies
-     */
-    public function buildProduction()
-    {
-
-    }
-
-    public function bootstrap()
-    {
-
-        // Init DB
-        // Build Assets
-        $this->buildAssets();
-    }
 
     /**
      * Provision the database seed for Docker.
@@ -56,31 +30,83 @@ class RoboFile extends \Robo\Tasks
             ->run();
     }
 
-    public function syncContent()
+    /**
+     * Pull fresh backup from dev site.
+     */
+    public function backupGet()
     {
-        // Grab db copy from Pantheon and pull into site.
+        $this->terminusExec('backup:create', [self::SITENAME . '.dev'], ['element', 'db']);
+        $this->terminusExec('backup:get', [self::SITENAME . '.dev'], ['to', self::DUMP_FILE]);
     }
 
     /**
-     * Export Terminus token to the environment if not already and authenticate with Terminus.
+     * Run Behat tests.
      */
-    public function terminusLogin()
+    public function test()
     {
-        if (!getenv('TERMINUS_TOKEN')) {
-            putenv('TERMINUS_TOKEN=' . $this->ask(
-                    'Please insert your Terminus Machine Token (https://dashboard.pantheon.io/machine-token/create)',
-                    true
-                )
-            );
-        }
-        $token = getenv('TERMINUS_TOKEN');
-        $this->_exec(self::TERMINUS_BIN . " login --machine-token={$token}");
+        $this->taskExec(self::COMPOSE_BIN)
+            ->args(['run', 'testphp', self::BEHAT_BIN])
+            ->option('colors')
+            ->run();
     }
 
+    /**
+     * Bring containers up, seed files as needed.
+     */
+    public function up()
+    {
+        if (!file_exists('mariadb-init/dump.sql') ||
+            !file_exists('web/sites/default/settings.local.php')
+        ) {
+            $this->setup();
+        }
+
+        $this->_exec(self::COMPOSE_BIN . ' up -d');
+    }
+
+    /**
+     * Seed database, shim in settings.local.php
+     */
+    public function setup()
+    {
+        $this->terminusLogin();
+        $this->getBackup();
+        $this->dbSeed();
+        $this->_copy(
+            self::DRUPAL_ROOT . '/sites/example.settings.local.php',
+            self::DRUPAL_ROOT . '/sites/default/settings.local.php'
+        );
+        $this->taskWriteToFile(self::DRUPAL_ROOT . '/sites/default/settings.local.php')
+            ->line('$settings[\'hash_salt\'] = \'salty\';')
+            ->run();
+    }
+
+    /**
+     * Build Drush tasks with common arguments.
+     * @return $this
+     */
     private function buildDrushTask()
     {
         return $this->taskDrushStack(self::DRUSH_BIN)
             ->drupalRootDirectory(self::DRUPAL_ROOT);
+    }
+
+    /**
+     * Build Terminus Command.
+     *
+     * @param string $command
+     * @param array $args
+     * @param array $opts
+     * @return \Robo\Result
+     */
+    private function terminusExec($command = '', array $args = [], array $opt = [])
+    {
+        return $this->taskExec(self::TERMINUS_BIN)
+            ->arg($command)
+            ->args($args)
+            ->option($opt[0], $opt[1])
+            ->run();
+
     }
 
 }

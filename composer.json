@@ -67,7 +67,7 @@
       "@drupal-scaffold",
       "DrupalProject\\composer\\ScriptHandler::createRequiredFiles"
     ],
-    "get:backup": "terminus backup:create --element=db super-scripts.dev && wget `terminus backup:get super-scripts.dev` -O dump.sql.gz",
+    "get:backup": "robo get:backup",
     "setup": [
       "robo terminus:login",
       "@get:backup",
