@@ -34,7 +34,10 @@
     "drush-ops/behat-drush-endpoint": "^0.0.4",
     "pantheon-systems/quicksilver-pushback": "~1",
     "phpunit/phpunit": "^4.8",
-    "symfony/css-selector": "^2.8"
+    "symfony/css-selector": "^2.8",
+    "consolidation/robo": "^1.0",
+    "boedah/robo-drush": "~3",
+    "consolidation/annotated-command": "2.4.5"
   },
   "conflict": {
       "drupal/drupal": "*"
@@ -63,7 +66,17 @@
     "post-create-project-cmd": [
       "@drupal-scaffold",
       "DrupalProject\\composer\\ScriptHandler::createRequiredFiles"
-    ]
+    ],
+    "get:backup": "terminus backup:create --element=db super-scripts.dev && wget `terminus backup:get super-scripts.dev` -O dump.sql.gz",
+    "setup": [
+      "robo terminus:login",
+      "@get:backup",
+      "robo db:seed",
+      "@build-assets",
+      "cp web/sites/example.settings.local.php web/sites/default/settings.local.php",
+      "echo '$settings[\"hash_salt\"] = \"tasty\";' >> web/sites/default/settings.local.php"
+    ],
+    "test": "docker-compose run testphp ./vendor/bin/behat --colors"
   },
   "extra": {
     "installer-paths": {
