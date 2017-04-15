@@ -45,6 +45,7 @@ class RoboFile extends \Robo\Tasks
         $this->taskExec(self::COMPOSE_BIN)
             ->args(['run', 'testphp', self::BEHAT_BIN])
             ->option('colors')
+            ->option('format', 'progress')
             ->run();
     }
 
@@ -68,15 +69,20 @@ class RoboFile extends \Robo\Tasks
     public function setup()
     {
         $this->terminusLogin();
-        $this->getBackup();
+        $this->backupGet();
         $this->dbSeed();
-        $this->_copy(
-            self::DRUPAL_ROOT . '/sites/example.settings.local.php',
-            self::DRUPAL_ROOT . '/sites/default/settings.local.php'
-        );
-        $this->taskWriteToFile(self::DRUPAL_ROOT . '/sites/default/settings.local.php')
-            ->line('$settings[\'hash_salt\'] = \'salty\';')
-            ->run();
+    }
+    public function terminusLogin()
+    {
+        if (!getenv('TERMINUS_TOKEN')) {
+            putenv('TERMINUS_TOKEN=' . $this->ask(
+                    'Please insert your Terminus Machine Token (https://dashboard.pantheon.io/machine-token/create)',
+                    true
+                )
+            );
+        }
+        $token = getenv('TERMINUS_TOKEN');
+        $this->_exec(self::TERMINUS_BIN . " login --machine-token={$token}");
     }
 
     /**

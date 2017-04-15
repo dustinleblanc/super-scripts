@@ -67,15 +67,8 @@
       "DrupalProject\\composer\\ScriptHandler::createRequiredFiles"
     ],
     "get:backup": "robo get:backup",
-    "setup": [
-      "robo terminus:login",
-      "@get:backup",
-      "robo db:seed",
-      "@build-assets",
-      "cp web/sites/example.settings.local.php web/sites/default/settings.local.php",
-      "echo '$settings[\"hash_salt\"] = \"tasty\";' >> web/sites/default/settings.local.php"
-    ],
-    "test": "docker-compose run testphp ./vendor/bin/behat --colors"
+    "test": "robo test",
+    "up": "robo up"
   },
   "extra": {
     "installer-paths": {
