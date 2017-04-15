@@ -36,7 +36,6 @@
     "phpunit/phpunit": "^4.8",
     "symfony/css-selector": "^2.8",
     "consolidation/robo": "^1.0",
-    "boedah/robo-drush": "~3",
     "consolidation/annotated-command": "2.4.5"
   },
   "conflict": {

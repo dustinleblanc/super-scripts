@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "83c294d2d5153d7c0008dd2884765979",
-    "content-hash": "0e9cd94a94f6db798a44687a6e0755b2",
+    "hash": "73adfe8f3e4162df0103e46382d890ca",
+    "content-hash": "caf00f860dd041a806a4caead5771629",
     "packages": [
         {
             "name": "alchemy/zippy",
@@ -4948,50 +4948,6 @@
                 "transliterator"
             ],
             "time": "2017-04-04 11:38:05"
-        },
-        {
-            "name": "boedah/robo-drush",
-            "version": "3.0.2",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/boedah/robo-drush.git",
-                "reference": "fe7d96edf1ea53e48f21c107ae7d986e866bba27"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/boedah/robo-drush/zipball/fe7d96edf1ea53e48f21c107ae7d986e866bba27",
-                "reference": "fe7d96edf1ea53e48f21c107ae7d986e866bba27",
-                "shasum": ""
-            },
-            "require": {
-                "consolidation/robo": "~1",
-                "php": ">=5.5.0"
-            },
-            "require-dev": {
-                "drush/drush": "~8",
-                "phpunit/phpunit": "~4.4"
-            },
-            "suggest": {
-                "drush/drush": "robo-drush needs a global or local Drush to use."
-            },
-            "type": "robo-tasks",
-            "autoload": {
-                "psr-4": {
-                    "Boedah\\Robo\\Task\\Drush\\": "src"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Peter Gasser",
-                    "email": "dev@boedah.de"
-                }
-            ],
-            "description": "Drush CommandStack for Robo Task Runner",
-            "time": "2017-02-01 14:32:23"
         },
         {
             "name": "consolidation/annotated-command",

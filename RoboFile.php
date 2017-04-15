@@ -7,10 +7,8 @@
  */
 class RoboFile extends \Robo\Tasks
 {
-    use \Boedah\Robo\Task\Drush\loadTasks;
     const COMPOSE_BIN = 'docker-compose';
     const DRUPAL_ROOT = __DIR__ . '/web';
-    const DRUSH_BIN = __DIR__ . '/vendor/bin/drush';
     const DUMP_FILE = __DIR__ . '/dump.sql.gz';
     const BEHAT_BIN = './vendor/bin/behat';
     const SITENAME = 'super-scripts';
