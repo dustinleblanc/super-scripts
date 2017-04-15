@@ -74,15 +74,6 @@ services:
     volumes:
       - ./:/var/www/html
 
-  pma:
-    image: phpmyadmin/phpmyadmin
-    environment:
-      PMA_HOST: mariadb
-      PMA_USER: drupal
-      PMA_PASSWORD: drupal
-      PHP_UPLOAD_MAX_FILESIZE: 1G
-      PHP_MAX_INPUT_VARS: 1G
-
   mailhog:
     image: mailhog/mailhog
 
@@ -99,12 +90,6 @@ services:
     entrypoint: phantomjs
     command: "--webdriver=4444"
 
-  build:
-    image: fusengine/docker-bower-gulp-browserify
-    environment:
-      BOWER_CWD: './web/profiles/recover/themes/recover_theme'
-    volumes:
-      - ./:/data
 # Docker-sync for macOS users
 #volumes:
 #  d4d-unison-sync:
